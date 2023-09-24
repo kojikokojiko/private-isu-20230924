@@ -32,6 +32,9 @@ echo "Resetting MySQL and Nginx logs..."
 sudo truncate -s 0 /var/log/mysql/slow-query.log
 sudo truncate -s 0 /var/log/nginx/access.log
 
+# log permission
+sudo chmod 777 /var/log/nginx /var/log/nginx/*
+sudo chmod 777 /var/log/mysql /var/log/mysql/*
 # isu-go, mysql, nginxを再起動
 echo "Restarting isu-go, mysql, nginx..."
 sudo systemctl restart isu-go
