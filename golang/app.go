@@ -561,7 +561,10 @@ func getPostsID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	results := []Post{}
-	err = db.Select(&results, "SELECT * FROM `posts` WHERE `id` = ?", pid)
+	err = db.Select(&results,
+		"SELECT p.id, p.user_id, p.body, p.mime, p.created_at"+
+			" FROM `posts` AS p JOIN `users` AS u ON (p.user_id=u.id) "+
+			"WHERE p.id= ? AND u.del_flg=0 ORDER BY p.created_at DESC LIMIT ?", pid, postsPerPage)
 	if err != nil {
 		log.Print(err)
 		return
