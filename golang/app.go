@@ -670,7 +670,7 @@ func postIndex(w http.ResponseWriter, r *http.Request) {
 		query,
 		me.ID,
 		mime,
-		[]byte(), // 画像データは保存しない
+		[]byte{}, // 画像データは保存しない
 		r.FormValue("body"),
 	)
 	if err != nil {
@@ -688,7 +688,7 @@ func postIndex(w http.ResponseWriter, r *http.Request) {
 	// 画像データを保存する
 	filename := fmt.Sprintf("../public/image/%d.%s", pid,getExtention(mime))
 
-	err:=os.WriteFile(filename, filedata, 0666)
+	err=os.WriteFile(filename, filedata, 0666)
 	if err != nil {
 		log.Print(err)
 		return
