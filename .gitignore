@@ -3,3 +3,4 @@ node
 ruby
 golang/app
 query-digester
+digest-log

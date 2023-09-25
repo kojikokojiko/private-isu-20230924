@@ -10,8 +10,9 @@ sudo query-digester -duration 70
 wait
 
 
-# .digestファイルをwebapp下まで持ってくる
 
+
+# .digestファイルをwebapp下まで持ってくる
 echo "Copying process start!"
 SOURCE_DIR="/tmp"
 DEST_DIR="/home/isucon/private_isu/webapp/digest-log"
@@ -21,15 +22,17 @@ if [ ! -d "$DEST_DIR" ]; then
     mkdir -p "$DEST_DIR"
 fi
 
-# /tmp ディレクトリ内の .digest ファイルを列挙し、それをコピーする
-for file in "$SOURCE_DIR"/*.digest; do
-    # ファイルが存在しない、または既に目的地に同名のファイルが存在する場合、スキップする
-    [ ! -e "$file" ] && continue
-    dest_file="$DEST_DIR/$(basename "$file")"
-    [ -e "$dest_file" ] && continue
+# 最新の .digest ファイルを見つける
+latest_file=$(ls -t "$SOURCE_DIR"/*.digest | head -n 1)
 
-    # ファイルをコピーする
-    cp "$file" "$DEST_DIR/"
-done
+# 最新のファイルが存在するか確認する
+[ ! -e "$latest_file" ] && exit 1  # ファイルが存在しない場合、スクリプトを終了
 
-echo "Copying process completed!"
+# 目的地に同名のファイルが存在するか確認する
+dest_file="$DEST_DIR/$(basename "$latest_file")"
+[ -e "$dest_file" ] && exit 1  # 同名のファイルが存在する場合、スクリプトを終了
+
+# ファイルをコピーする
+cp "$latest_file" "$DEST_DIR/"
+
+echo "Copying .digest completed!"
