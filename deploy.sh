@@ -8,7 +8,7 @@ set -x
 
 # Gitのmasterブランチをpull
 echo "Pulling the latest code from the master branch..."
-git pull origin main
+git pull origin koji-change-nginx-setting
 
 # MySQL設定ファイルをコピー
 echo "Copying MySQL configuration..."
