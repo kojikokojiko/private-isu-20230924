@@ -670,7 +670,7 @@ func postIndex(w http.ResponseWriter, r *http.Request) {
 		query,
 		me.ID,
 		mime,
-		filedata,
+		[]byte(), // 画像データは保存しない
 		r.FormValue("body"),
 	)
 	if err != nil {
@@ -684,7 +684,33 @@ func postIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+
+	// 画像データを保存する
+	filename := fmt.Sprintf("../public/image/%d.%s", pid,getExtention(mime))
+
+	err:=os.WriteFile(filename, filedata, 0666)
+	if err != nil {
+		log.Print(err)
+		return
+	}
+
+
 	http.Redirect(w, r, "/posts/"+strconv.FormatInt(pid, 10), http.StatusFound)
+}
+
+
+
+func getExtention(mime string) string {
+	switch mime {
+	case "image/jpeg":	
+		return "jpg"
+	case "image/png":
+		return "png"
+	case "image/gif":
+		return "gif"
+	default:
+		return ""
+	}
 }
 
 func getImage(w http.ResponseWriter, r *http.Request) {
