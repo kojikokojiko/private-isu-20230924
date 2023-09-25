@@ -683,8 +683,8 @@ func postIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err := os.Stat("../public/image"); os.IsNotExist(err) {
-		os.MkdirAll("../public/image", 0755)
+	if _, err := os.Stat("../image"); os.IsNotExist(err) {
+		os.MkdirAll("../image", 0755)
 	}
 	// 画像データを保存する
 	filename := fmt.Sprintf("../image/%d.%s", pid, getExtention(mime))
