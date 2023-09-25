@@ -211,7 +211,7 @@ func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, erro
 
 		p.CSRFToken = csrfToken
 
-		posts=append(posts,p)
+		posts = append(posts, p)
 	}
 
 	return posts, nil
@@ -388,7 +388,6 @@ func getIndex(w http.ResponseWriter, r *http.Request) {
 			" FROM `posts` AS p JOIN `users` AS u ON (p.user_id=u.id) "+
 			"WHERE u.del_flg=0 ORDER BY p.created_at DESC LIMIT ?", postsPerPage)
 
-	
 	if err != nil {
 		log.Print(err)
 		return
@@ -531,10 +530,10 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 	// err = db.Select(&results, "SELECT `id`, `user_id`, `body`, `mime`, `created_at` FROM `posts` WHERE `created_at` <= ? ORDER BY `created_at` DESC", t.Format(ISO8601Format))
 
 	err = db.Select(&results,
-			"SELECT p.id, p.user_id, p.body, p.mime, p.created_at"+
-				" FROM `posts` AS p JOIN `users` AS u ON (p.user_id=u.id) "+
-				"WHERE p.created_at <= ? AND u.del_flg=0 ORDER BY p.created_at DESC LIMIT ?", t.Format(ISO8601Format), postsPerPage)
-				
+		"SELECT p.id, p.user_id, p.body, p.mime, p.created_at"+
+			" FROM `posts` AS p JOIN `users` AS u ON (p.user_id=u.id) "+
+			"WHERE p.created_at <= ? AND u.del_flg=0 ORDER BY p.created_at DESC LIMIT ?", t.Format(ISO8601Format), postsPerPage)
+
 	if err != nil {
 		log.Print(err)
 		return
@@ -684,12 +683,11 @@ func postIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
 	if _, err := os.Stat("../public/image"); os.IsNotExist(err) {
 		os.MkdirAll("../public/image", 0755)
 	}
 	// 画像データを保存する
-	filename := fmt.Sprintf("../public/image/%d.%s", pid,getExtention(mime))
+	filename := fmt.Sprintf("../image/%d.%s", pid, getExtention(mime))
 
 	err = os.WriteFile(filename, filedata, 0644)
 	if err != nil {
@@ -697,15 +695,12 @@ func postIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
 	http.Redirect(w, r, "/posts/"+strconv.FormatInt(pid, 10), http.StatusFound)
 }
 
-
-
 func getExtention(mime string) string {
 	switch mime {
-	case "image/jpeg":	
+	case "image/jpeg":
 		return "jpg"
 	case "image/png":
 		return "png"
