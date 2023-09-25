@@ -35,4 +35,4 @@ dest_file="$DEST_DIR/$(basename "$latest_file")"
 # ファイルをコピーする
 cp "$latest_file" "$DEST_DIR/"
 
-echo "Copying .digest completed!"
+echo "Copying newest .digest completed!"
