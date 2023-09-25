@@ -691,7 +691,7 @@ func postIndex(w http.ResponseWriter, r *http.Request) {
 	// 画像データを保存する
 	filename := fmt.Sprintf("../public/image/%d.%s", pid,getExtention(mime))
 
-	err = io.WriteFile(filename, filedata, 0644)
+	err = os.WriteFile(filename, filedata, 0644)
 	if err != nil {
 		log.Print("Could not write file: ", err)
 		return
