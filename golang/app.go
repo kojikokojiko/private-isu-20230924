@@ -211,6 +211,7 @@ func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, erro
 
 		p.CSRFToken = csrfToken
 
+		posts=append(posts,p)
 	}
 
 	return posts, nil
