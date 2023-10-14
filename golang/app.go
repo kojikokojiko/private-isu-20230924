@@ -91,6 +91,37 @@ func dbInitialize() {
 	}
 }
 
+func deleteImageFiles() {
+	files, err := os.ReadDir("../image")
+	if err != nil {
+		fmt.Println("Error reading directory:", err)
+		return
+	}
+
+	for _, file := range files {
+		fileName := file.Name()
+		parts := strings.Split(fileName, ".")
+		if len(parts) != 2 {
+			continue
+		}
+
+		idx, err := strconv.Atoi(parts[0])
+		if err != nil {
+			fmt.Println("Error converting string to integer:", err)
+			continue
+		}
+
+		if idx > 10000 {
+			err := os.Remove("../image/" + fileName)
+			if err != nil {
+				fmt.Println("Error deleting file:", err)
+			} else {
+				fmt.Println("Deleted:", fileName)
+			}
+		}
+	}
+}
+
 func tryLogin(accountName, password string) *User {
 	u := User{}
 	err := db.Get(&u, "SELECT * FROM users WHERE account_name = ? AND del_flg = 0", accountName)
@@ -258,6 +289,7 @@ func getTemplPath(filename string) string {
 
 func getInitialize(w http.ResponseWriter, r *http.Request) {
 	dbInitialize()
+	deleteImageFiles()
 	w.WriteHeader(http.StatusOK)
 }
 
