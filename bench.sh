@@ -46,7 +46,11 @@ if [ ! -d "$ALP_DIR" ]; then
     mkdir -p "$ALP_DIR"
 fi
 
+
+# 現在の日時を取得
+current_date=$(date +"%Y%m%d-%H%M%S")
+
 # alpコマンドの実行と結果の保存
-cat /var/log/nginx/access.log | alp ltsv -m '/initialize,/login$,/login$ --post,/register$,/register$ --post,/logout,/^/$,/posts$,/posts/\d+,/image/\d+\.\w+,/comment$ --post,/admin/banned$,/admin/banned$ --post,/@\w+,/\*' --sort sum --reverse > "$ALP_DIR/result.txt"
+cat /var/log/nginx/access.log | alp ltsv -m '/initialize,/login$,/login$ --post,/register$,/register$ --post,/logout,/^/$,/posts$,/posts/\d+,/image/\d+\.\w+,/comment$ --post,/admin/banned$,/admin/banned$ --post,/@\w+,/\*' --sort sum --reverse > "$ALP_DIR/result-${current_date}.txt"
 
 echo "Copying newest accesslog completed!"
