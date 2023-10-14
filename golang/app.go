@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -87,6 +88,37 @@ func dbInitialize() {
 
 	for _, sql := range sqls {
 		db.Exec(sql)
+	}
+}
+
+func deleteImageFiles() {
+	files, err := os.ReadDir("../image")
+	if err != nil {
+		fmt.Println("Error reading directory:", err)
+		return
+	}
+
+	for _, file := range files {
+		fileName := file.Name()
+		parts := strings.Split(fileName, ".")
+		if len(parts) != 2 {
+			continue
+		}
+
+		idx, err := strconv.Atoi(parts[0])
+		if err != nil {
+			fmt.Println("Error converting string to integer:", err)
+			continue
+		}
+
+		if idx > 10000 {
+			err := os.Remove("../image/" + fileName)
+			if err != nil {
+				fmt.Println("Error deleting file:", err)
+			} else {
+				fmt.Println("Deleted:", fileName)
+			}
+		}
 	}
 }
 
@@ -211,7 +243,7 @@ func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, erro
 
 		p.CSRFToken = csrfToken
 
-		posts=append(posts,p)
+		posts = append(posts, p)
 	}
 
 	return posts, nil
@@ -257,6 +289,7 @@ func getTemplPath(filename string) string {
 
 func getInitialize(w http.ResponseWriter, r *http.Request) {
 	dbInitialize()
+	deleteImageFiles()
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -388,7 +421,6 @@ func getIndex(w http.ResponseWriter, r *http.Request) {
 			" FROM `posts` AS p JOIN `users` AS u ON (p.user_id=u.id) "+
 			"WHERE u.del_flg=0 ORDER BY p.created_at DESC LIMIT ?", postsPerPage)
 
-	
 	if err != nil {
 		log.Print(err)
 		return
@@ -531,10 +563,10 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 	// err = db.Select(&results, "SELECT `id`, `user_id`, `body`, `mime`, `created_at` FROM `posts` WHERE `created_at` <= ? ORDER BY `created_at` DESC", t.Format(ISO8601Format))
 
 	err = db.Select(&results,
-			"SELECT p.id, p.user_id, p.body, p.mime, p.created_at"+
-				" FROM `posts` AS p JOIN `users` AS u ON (p.user_id=u.id) "+
-				"WHERE p.created_at <= ? AND u.del_flg=0 ORDER BY p.created_at DESC LIMIT ?", t.Format(ISO8601Format), postsPerPage)
-				
+		"SELECT p.id, p.user_id, p.body, p.mime, p.created_at"+
+			" FROM `posts` AS p JOIN `users` AS u ON (p.user_id=u.id) "+
+			"WHERE p.created_at <= ? AND u.del_flg=0 ORDER BY p.created_at DESC LIMIT ?", t.Format(ISO8601Format), postsPerPage)
+
 	if err != nil {
 		log.Print(err)
 		return
@@ -670,7 +702,8 @@ func postIndex(w http.ResponseWriter, r *http.Request) {
 		query,
 		me.ID,
 		mime,
-		filedata,
+		[]byte{},
+		// filedata,
 		r.FormValue("body"),
 	)
 	if err != nil {
@@ -684,7 +717,38 @@ func postIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	filename := fmt.Sprintf("../image/%d.%s", pid, getExtension(mime))
+
+	// ファイルのディレクトリ部分を取得
+	dir := filepath.Dir(filename)
+
+	// ディレクトリが存在しない場合、ディレクトリを作成
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			// ここでエラー処理を行います。例: log.Fatal(err)
+		}
+	}
+
+	err = os.WriteFile(filename, filedata, 0644)
+	if err != nil {
+		log.Print("Could not write file: ", err)
+		return
+	}
+
 	http.Redirect(w, r, "/posts/"+strconv.FormatInt(pid, 10), http.StatusFound)
+}
+
+func getExtension(mime string) string {
+	switch mime {
+	case "image/jpeg":
+		return "jpg"
+	case "image/png":
+		return "png"
+	case "image/gif":
+		return "gif"
+	default:
+		return ""
+	}
 }
 
 func getImage(w http.ResponseWriter, r *http.Request) {
@@ -709,6 +773,14 @@ func getImage(w http.ResponseWriter, r *http.Request) {
 		ext == "gif" && post.Mime == "image/gif" {
 		w.Header().Set("Content-Type", post.Mime)
 		_, err := w.Write(post.Imgdata)
+		if err != nil {
+			log.Print(err)
+			return
+		}
+		// // ファイルに書き出す
+		filename := "../image/" + pidStr + "." + ext
+		err = os.WriteFile(filename, post.Imgdata, 0666)
+		os.Chmod(filename, 0666)
 		if err != nil {
 			log.Print(err)
 			return
