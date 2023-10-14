@@ -36,3 +36,17 @@ dest_file="$DEST_DIR/$(basename "$latest_file")"
 cp "$latest_file" "$DEST_DIR/"
 
 echo "Copying newest .digest completed!"
+
+# alpディレクトリの定義
+ALP_DIR="/home/isucon/private_isu/webapp/access_logs"
+
+
+# DEST_DIR が存在しなければ作成
+if [ ! -d "$ALP_DIR" ]; then
+    mkdir -p "$ALP_DIR"
+fi
+
+# alpコマンドの実行と結果の保存
+cat /var/log/nginx/access.log | alp ltsv -m '/initialize,/login$,/login$ --post,/register$,/register$ --post,/logout,/^/$,/posts$,/posts/\d+,/image/\d+\.\w+,/comment$ --post,/admin/banned$,/admin/banned$ --post,/@\w+,/\*' --sort sum --reverse > "$ALP_DIR/result.txt"
+
+echo "Copying newest accesslog completed!"

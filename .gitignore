@@ -5,3 +5,4 @@ golang/app
 query-digester
 digest-log
 image
+access_logs
