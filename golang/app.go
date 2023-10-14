@@ -702,8 +702,8 @@ func postIndex(w http.ResponseWriter, r *http.Request) {
 		query,
 		me.ID,
 		mime,
-		// []byte{},
-		filedata,
+		[]byte{},
+		// filedata,
 		r.FormValue("body"),
 	)
 	if err != nil {
@@ -773,6 +773,14 @@ func getImage(w http.ResponseWriter, r *http.Request) {
 		ext == "gif" && post.Mime == "image/gif" {
 		w.Header().Set("Content-Type", post.Mime)
 		_, err := w.Write(post.Imgdata)
+		if err != nil {
+			log.Print(err)
+			return
+		}
+		// // ファイルに書き出す
+		filename := "../image/" + pidStr + "." + ext
+		err = os.WriteFile(filename, post.Imgdata, 0666)
+		os.Chmod(filename, 0666)
 		if err != nil {
 			log.Print(err)
 			return
