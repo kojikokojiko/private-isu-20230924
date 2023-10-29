@@ -4,6 +4,7 @@ import (
 	crand "crypto/rand"
 	"crypto/sha512"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"io"
@@ -27,8 +28,9 @@ import (
 )
 
 var (
-	db    *sqlx.DB
-	store *gsm.MemcacheStore
+	db             *sqlx.DB
+	store          *gsm.MemcacheStore
+	memcacheClient *memcache.Client
 )
 
 const (
@@ -73,7 +75,7 @@ func init() {
 	if memdAddr == "" {
 		memdAddr = "localhost:11211"
 	}
-	memcacheClient := memcache.New(memdAddr)
+	memcacheClient = memcache.New(memdAddr)
 	store = gsm.NewMemcacheStore(memcacheClient, "iscogram_", []byte("sendagaya"))
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 }
@@ -198,46 +200,49 @@ func getFlash(w http.ResponseWriter, r *http.Request, key string) string {
 	}
 }
 
-// func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, error) {
-// 	var posts []Post
-
-// 	for _,p :=range results{
-// 		countKey:=fmt.Sprintf("post:%d:comment_count",p.ID)
-// 		count,err:=cache.Get(countKey)
-
-// 	}
-// }
-
 func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, error) {
 	var posts []Post
 
 	for _, p := range results {
-		err := db.Get(&p.CommentCount, "SELECT COUNT(*) AS `count` FROM `comments` WHERE `post_id` = ?", p.ID)
-		if err != nil {
-			return nil, err
-		}
+		cacheKey := fmt.Sprintf("post:%d:comments", p.ID)
+		item, err := memcacheClient.Get(cacheKey)
+		if err == nil {
+			// キャッシュヒット
+			err = json.Unmarshal(item.Value, &p.Comments)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			// キャッシュミス
+			err = db.Get(&p.CommentCount, "SELECT COUNT(*) AS `count` FROM `comments` WHERE `post_id` = ?", p.ID)
+			if err != nil {
+				return nil, err
+			}
 
-		query := "SELECT c.comment,c.created_at ,u.account_name as `user.account_name` FROM `comments` as c JOIN `users` as u ON c.user_id = u.id  WHERE `post_id` = ? ORDER BY `created_at` DESC"
-		if !allComments {
-			query += " LIMIT 3"
-		}
-		var comments []Comment
-		err = db.Select(&comments, query, p.ID)
-		if err != nil {
-			return nil, err
-		}
+			query := "SELECT c.comment,c.created_at ,u.account_name as `user.account_name` FROM `comments` as c JOIN `users` as u ON c.user_id = u.id  WHERE `post_id` = ? ORDER BY `created_at` DESC"
+			if !allComments {
+				query += " LIMIT 3"
+			}
+			var comments []Comment
+			err = db.Select(&comments, query, p.ID)
+			if err != nil {
+				return nil, err
+			}
 
-		// reverse この処理消してもbenchは通るけどアプリケーション的にダメそう
-		for i, j := 0, len(comments)-1; i < j; i, j = i+1, j-1 {
-			comments[i], comments[j] = comments[j], comments[i]
+			// reverse
+			for i, j := 0, len(comments)-1; i < j; i, j = i+1, j-1 {
+				comments[i], comments[j] = comments[j], comments[i]
+			}
+
+			p.Comments = comments
+
+			// キャッシュへ保存
+			serialized, err := json.Marshal(p.Comments)
+			if err != nil {
+				return nil, err
+			}
+			memcacheClient.Set(&memcache.Item{Key: cacheKey, Value: serialized})
 		}
-
-		p.Comments = comments
-
-		// err = db.Get(&p.User, "SELECT * FROM `users` WHERE `id` = ?", p.UserID)
-		// if err != nil {
-		// 	return nil, err
-		// }
 
 		p.CSRFToken = csrfToken
 
