@@ -432,8 +432,9 @@ func getIndex(w http.ResponseWriter, r *http.Request) {
 
 	err := db.Select(&results,
 		"SELECT p.id, p.user_id, p.body, p.mime, p.created_at, "+
-			"u.id as `user.id`, u.account_name as `user.account_name`, u.passhash as `user.passhash`,"+
-			"u.authority as `user.authority`, u.del_flg as `user.del_flg`, u.created_at as `user.created_at`"+
+			"u.account_name as `user.account_name`"+
+			// "u.id as `user.id`, u.account_name as `user.account_name`, u.passhash as `user.passhash`,"+
+			// "u.authority as `user.authority`, u.del_flg as `user.del_flg`, u.created_at as `user.created_at`"+
 			" FROM `posts` AS p JOIN `users` AS u ON (p.user_id=u.id) "+
 			"WHERE u.del_flg=0 ORDER BY p.created_at DESC LIMIT ?", postsPerPage)
 
@@ -488,8 +489,9 @@ func getAccountName(w http.ResponseWriter, r *http.Request) {
 
 	err = db.Select(&results,
 		"SELECT p.id, p.user_id, p.body, p.mime, p.created_at,"+
-			"u.id as `user.id`, u.account_name as `user.account_name`, u.passhash as `user.passhash`,"+
-			"u.authority as `user.authority`, u.del_flg as `user.del_flg`, u.created_at as `user.created_at`"+
+			"u.account_name as `user.account_name`"+
+			// "u.id as `user.id`, u.account_name as `user.account_name`, u.passhash as `user.passhash`,"+
+			// "u.authority as `user.authority`, u.del_flg as `user.del_flg`, u.created_at as `user.created_at`"+
 			" FROM `posts` AS p JOIN `users` AS u ON (p.user_id=u.id) "+
 			"WHERE p.user_id = ? AND u.del_flg=0 ORDER BY p.created_at DESC LIMIT ?", user.ID, postsPerPage)
 
@@ -584,8 +586,9 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 
 	err = db.Select(&results,
 		"SELECT p.id, p.user_id, p.body, p.mime, p.created_at,"+
-			"u.id as `user.id`, u.account_name as `user.account_name`, u.passhash as `user.passhash`,"+
-			"u.authority as `user.authority`, u.del_flg as `user.del_flg`, u.created_at as `user.created_at`"+
+			"u.account_name as `user.account_name`"+
+			// "u.id as `user.id`, u.account_name as `user.account_name`, u.passhash as `user.passhash`,"+
+			// "u.authority as `user.authority`, u.del_flg as `user.del_flg`, u.created_at as `user.created_at`"+
 			" FROM `posts` AS p JOIN `users` AS u ON (p.user_id=u.id) "+
 			"WHERE p.created_at <= ? AND u.del_flg=0 ORDER BY p.created_at DESC LIMIT ?", t.Format(ISO8601Format), postsPerPage)
 
@@ -629,8 +632,9 @@ func getPostsID(w http.ResponseWriter, r *http.Request) {
 	results := []Post{}
 	err = db.Select(&results,
 		"SELECT p.id, p.user_id, p.body, p.mime, p.created_at,"+
-			"u.id as `user.id`, u.account_name as `user.account_name`, u.passhash as `user.passhash`,"+
-			"u.authority as `user.authority`, u.del_flg as `user.del_flg`, u.created_at as `user.created_at`"+
+			"u.account_name as `user.account_name`"+
+			// "u.id as `user.id`, u.account_name as `user.account_name`, u.passhash as `user.passhash`,"+
+			// "u.authority as `user.authority`, u.del_flg as `user.del_flg`, u.created_at as `user.created_at`"+
 			" FROM `posts` AS p JOIN `users` AS u ON (p.user_id=u.id) "+
 			"WHERE p.id= ? AND u.del_flg=0 ORDER BY p.created_at DESC LIMIT ?", pid, postsPerPage)
 	if err != nil {
