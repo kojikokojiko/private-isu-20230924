@@ -198,6 +198,16 @@ func getFlash(w http.ResponseWriter, r *http.Request, key string) string {
 	}
 }
 
+// func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, error) {
+// 	var posts []Post
+
+// 	for _,p :=range results{
+// 		countKey:=fmt.Sprintf("post:%d:comment_count",p.ID)
+// 		count,err:=cache.Get(countKey)
+
+// 	}
+// }
+
 func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, error) {
 	var posts []Post
 
@@ -207,7 +217,7 @@ func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, erro
 			return nil, err
 		}
 
-		query := "SELECT * FROM `comments` WHERE `post_id` = ? ORDER BY `created_at` DESC"
+		query := "SELECT c.comment,c.created_at ,u.account_name as `user.account_name` FROM `comments` as c JOIN `users` as u ON c.user_id = u.id  WHERE `post_id` = ? ORDER BY `created_at` DESC"
 		if !allComments {
 			query += " LIMIT 3"
 		}
@@ -215,13 +225,6 @@ func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, erro
 		err = db.Select(&comments, query, p.ID)
 		if err != nil {
 			return nil, err
-		}
-
-		for i := 0; i < len(comments); i++ {
-			err := db.Get(&comments[i].User, "SELECT * FROM `users` WHERE `id` = ?", comments[i].UserID)
-			if err != nil {
-				return nil, err
-			}
 		}
 
 		// reverse
