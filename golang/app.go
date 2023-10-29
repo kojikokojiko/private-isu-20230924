@@ -506,7 +506,7 @@ func getIndex(w http.ResponseWriter, r *http.Request) {
 	// err := db.Select(&results, "SELECT `id`, `user_id`, `body`, `mime`, `created_at` FROM `posts` ORDER BY `created_at` DESC")
 
 	err := db.Select(&results,
-		"SELECT p.id, p.user_id, p.body, p.mime, p.created_at, "+
+		"SELECT STRAIGHT_JOIN p.id, p.user_id, p.body, p.mime, p.created_at, "+
 			"u.account_name as `user.account_name`"+
 			// "u.id as `user.id`, u.account_name as `user.account_name`, u.passhash as `user.passhash`,"+
 			// "u.authority as `user.authority`, u.del_flg as `user.del_flg`, u.created_at as `user.created_at`"+
@@ -563,7 +563,7 @@ func getAccountName(w http.ResponseWriter, r *http.Request) {
 	// err = db.Select(&results, "SELECT `id`, `user_id`, `body`, `mime`, `created_at` FROM `posts` WHERE `user_id` = ? ORDER BY `created_at` DESC", user.ID)
 
 	err = db.Select(&results,
-		"SELECT p.id, p.user_id, p.body, p.mime, p.created_at,"+
+		"SELECT STRAIGHT_JOIN p.id, p.user_id, p.body, p.mime, p.created_at,"+
 			"u.account_name as `user.account_name`"+
 			// "u.id as `user.id`, u.account_name as `user.account_name`, u.passhash as `user.passhash`,"+
 			// "u.authority as `user.authority`, u.del_flg as `user.del_flg`, u.created_at as `user.created_at`"+
@@ -660,7 +660,7 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 	// err = db.Select(&results, "SELECT `id`, `user_id`, `body`, `mime`, `created_at` FROM `posts` WHERE `created_at` <= ? ORDER BY `created_at` DESC", t.Format(ISO8601Format))
 
 	err = db.Select(&results,
-		"SELECT p.id, p.user_id, p.body, p.mime, p.created_at,"+
+		"SELECT STRAIGHT_JOIN p.id, p.user_id, p.body, p.mime, p.created_at,"+
 			"u.account_name as `user.account_name`"+
 			// "u.id as `user.id`, u.account_name as `user.account_name`, u.passhash as `user.passhash`,"+
 			// "u.authority as `user.authority`, u.del_flg as `user.del_flg`, u.created_at as `user.created_at`"+
@@ -706,7 +706,7 @@ func getPostsID(w http.ResponseWriter, r *http.Request) {
 
 	results := []Post{}
 	err = db.Select(&results,
-		"SELECT p.id, p.user_id, p.body, p.mime, p.created_at,"+
+		"SELECT STRAIGHT_JOIN p.id, p.user_id, p.body, p.mime, p.created_at,"+
 			"u.account_name as `user.account_name`"+
 			// "u.id as `user.id`, u.account_name as `user.account_name`, u.passhash as `user.passhash`,"+
 			// "u.authority as `user.authority`, u.del_flg as `user.del_flg`, u.created_at as `user.created_at`"+
