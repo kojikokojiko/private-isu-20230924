@@ -200,6 +200,73 @@ func getFlash(w http.ResponseWriter, r *http.Request, key string) string {
 	}
 }
 
+// func makePosts2(results []Post, csrfToken string, allComments bool) ([]Post, error) {
+// 	var posts []Post
+
+// 	for _, p := range results {
+// 		// コメントの数をキャッシュから取得
+// 		commentCountKey := fmt.Sprintf("post:%d:commentCount", p.ID)
+// 		commentCountItem, err := memcacheClient.Get(commentCountKey)
+// 		if err != nil && err != memcache.ErrCacheMiss {
+// 			return nil, err
+// 		}
+// 		if err == nil {
+// 			p.CommentCount, _ = strconv.Atoi(string(commentCountItem.Value))
+// 		} else {
+// 			// キャッシュにない場合はDBから取得し、キャッシュに保存
+// 			err = db.Get(&p.CommentCount, "SELECT COUNT(*) FROM `comments` WHERE `post_id` = ?", p.ID)
+// 			if err != nil {
+// 				return nil, err
+// 			}
+// 			memcacheClient.Set(&memcache.Item{Key: commentCountKey, Value: []byte(strconv.Itoa(p.CommentCount))})
+// 		}
+
+// 		// コメントをキャッシュから取得
+// 		commentsKey := fmt.Sprintf("post:%d:comments", p.ID)
+// 		commentsItem, err := memcacheClient.Get(commentsKey)
+// 		if err != nil && err != memcache.ErrCacheMiss {
+// 			return nil, err
+// 		}
+// 		if err == nil {
+// 			err = json.Unmarshal(commentsItem.Value, &p.Comments)
+// 			if err != nil {
+// 				return nil, err
+// 			}
+// 		} else {
+// 			// キャッシュにない場合はDBから取得し、キャッシュに保存
+// 			query := "SELECT c.comment, c.created_at, u.account_name as `user.account_name` FROM `comments` as c JOIN `users` as u ON c.user_id = u.id WHERE `post_id` = ? ORDER BY `created_at` DESC"
+// 			if !allComments {
+// 				query += " LIMIT 3"
+// 			}
+// 			err = db.Select(&p.Comments, query, p.ID)
+// 			if err != nil {
+// 				return nil, err
+// 			}
+
+// 			// クエリの結果をJSONにエンコードしてキャッシュに保存
+// 			commentsBytes, err := json.Marshal(p.Comments)
+// 			if err != nil {
+// 				return nil, err
+// 			}
+// 			memcacheClient.Set(&memcache.Item{Key: commentsKey, Value: commentsBytes})
+// 		}
+
+// 		// この処理はDBから取得した場合のみ必要
+// 		if err == memcache.ErrCacheMiss {
+// 			// コメントを逆順にする
+// 			for i, j := 0, len(p.Comments)-1; i < j; i, j = i+1, j-1 {
+// 				p.Comments[i], p.Comments[j] = p.Comments[j], p.Comments[i]
+// 			}
+// 		}
+
+// 		p.CSRFToken = csrfToken
+
+// 		posts = append(posts, p)
+// 	}
+
+// 	return posts, nil
+// }
+
 func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, error) {
 	var posts []Post
 
