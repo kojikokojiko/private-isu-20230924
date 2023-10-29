@@ -6,6 +6,10 @@ set -e
 # 実行するコマンドを出力
 set -x
 
+
+current_branch=$(git branch --show-current)
+echo "現在のブランチ: $current_branch"
+
 # Gitのmasterブランチをpull
 echo "Pulling the latest code from the master branch..."
 git pull origin main
