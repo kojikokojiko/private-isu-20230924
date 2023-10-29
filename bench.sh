@@ -1,5 +1,9 @@
 #!/bin/bash
 
+current_branch=$(git branch --show-current)
+echo "現在のブランチ: $current_branch"
+
+
 # 1つ目のコマンドをバックグラウンドで実行
 /home/isucon/private_isu/benchmarker/bin/benchmarker -u /home/isucon/private_isu/benchmarker/userdata -t http://localhost &
 
