@@ -412,7 +412,7 @@ func getIndex(w http.ResponseWriter, r *http.Request) {
 	// err := db.Select(&results, "SELECT `id`, `user_id`, `body`, `mime`, `created_at` FROM `posts` ORDER BY `created_at` DESC")
 
 	err := db.Select(&results,
-		"SELECT p.id, p.user_id, p.body, p.mime, p.created_at"+
+		"SELECT p.id, p.user_id, p.body, p.mime, p.created_at, "+
 			"u.id as `user.id`, u.account_name as `user.account_name`, u.passhash as `user.passhash`,"+
 			"u.authority as `user.authority`, u.del_flg as `user.del_flg`, u.created_at as `user.created_at`"+
 			" FROM `posts` AS p JOIN `users` AS u ON (p.user_id=u.id) "+
@@ -466,7 +466,7 @@ func getAccountName(w http.ResponseWriter, r *http.Request) {
 	// err = db.Select(&results, "SELECT `id`, `user_id`, `body`, `mime`, `created_at` FROM `posts` WHERE `user_id` = ? ORDER BY `created_at` DESC", user.ID)
 
 	err = db.Select(&results,
-		"SELECT p.id, p.user_id, p.body, p.mime, p.created_at"+
+		"SELECT p.id, p.user_id, p.body, p.mime, p.created_at,"+
 			"u.id as `user.id`, u.account_name as `user.account_name`, u.passhash as `user.passhash`,"+
 			"u.authority as `user.authority`, u.del_flg as `user.del_flg`, u.created_at as `user.created_at`"+
 			" FROM `posts` AS p JOIN `users` AS u ON (p.user_id=u.id) "+
@@ -562,7 +562,7 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 	// err = db.Select(&results, "SELECT `id`, `user_id`, `body`, `mime`, `created_at` FROM `posts` WHERE `created_at` <= ? ORDER BY `created_at` DESC", t.Format(ISO8601Format))
 
 	err = db.Select(&results,
-		"SELECT p.id, p.user_id, p.body, p.mime, p.created_at"+
+		"SELECT p.id, p.user_id, p.body, p.mime, p.created_at,"+
 			"u.id as `user.id`, u.account_name as `user.account_name`, u.passhash as `user.passhash`,"+
 			"u.authority as `user.authority`, u.del_flg as `user.del_flg`, u.created_at as `user.created_at`"+
 			" FROM `posts` AS p JOIN `users` AS u ON (p.user_id=u.id) "+
@@ -604,7 +604,7 @@ func getPostsID(w http.ResponseWriter, r *http.Request) {
 
 	results := []Post{}
 	err = db.Select(&results,
-		"SELECT p.id, p.user_id, p.body, p.mime, p.created_at"+
+		"SELECT p.id, p.user_id, p.body, p.mime, p.created_at,"+
 			"u.id as `user.id`, u.account_name as `user.account_name`, u.passhash as `user.passhash`,"+
 			"u.authority as `user.authority`, u.del_flg as `user.del_flg`, u.created_at as `user.created_at`"+
 			" FROM `posts` AS p JOIN `users` AS u ON (p.user_id=u.id) "+
