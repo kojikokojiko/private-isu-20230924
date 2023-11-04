@@ -200,80 +200,38 @@ func getFlash(w http.ResponseWriter, r *http.Request, key string) string {
 	}
 }
 
-// func makePosts2(results []Post, csrfToken string, allComments bool) ([]Post, error) {
-// 	var posts []Post
-
-// 	for _, p := range results {
-// 		// コメントの数をキャッシュから取得
-// 		commentCountKey := fmt.Sprintf("post:%d:commentCount", p.ID)
-// 		commentCountItem, err := memcacheClient.Get(commentCountKey)
-// 		if err != nil && err != memcache.ErrCacheMiss {
-// 			return nil, err
-// 		}
-// 		if err == nil {
-// 			p.CommentCount, _ = strconv.Atoi(string(commentCountItem.Value))
-// 		} else {
-// 			// キャッシュにない場合はDBから取得し、キャッシュに保存
-// 			err = db.Get(&p.CommentCount, "SELECT COUNT(*) FROM `comments` WHERE `post_id` = ?", p.ID)
-// 			if err != nil {
-// 				return nil, err
-// 			}
-// 			memcacheClient.Set(&memcache.Item{Key: commentCountKey, Value: []byte(strconv.Itoa(p.CommentCount))})
-// 		}
-
-// 		// コメントをキャッシュから取得
-// 		commentsKey := fmt.Sprintf("post:%d:comments", p.ID)
-// 		commentsItem, err := memcacheClient.Get(commentsKey)
-// 		if err != nil && err != memcache.ErrCacheMiss {
-// 			return nil, err
-// 		}
-// 		if err == nil {
-// 			err = json.Unmarshal(commentsItem.Value, &p.Comments)
-// 			if err != nil {
-// 				return nil, err
-// 			}
-// 		} else {
-// 			// キャッシュにない場合はDBから取得し、キャッシュに保存
-// 			query := "SELECT c.comment, c.created_at, u.account_name as `user.account_name` FROM `comments` as c JOIN `users` as u ON c.user_id = u.id WHERE `post_id` = ? ORDER BY `created_at` DESC"
-// 			if !allComments {
-// 				query += " LIMIT 3"
-// 			}
-// 			err = db.Select(&p.Comments, query, p.ID)
-// 			if err != nil {
-// 				return nil, err
-// 			}
-
-// 			// クエリの結果をJSONにエンコードしてキャッシュに保存
-// 			commentsBytes, err := json.Marshal(p.Comments)
-// 			if err != nil {
-// 				return nil, err
-// 			}
-// 			memcacheClient.Set(&memcache.Item{Key: commentsKey, Value: commentsBytes})
-// 		}
-
-// 		// この処理はDBから取得した場合のみ必要
-// 		if err == memcache.ErrCacheMiss {
-// 			// コメントを逆順にする
-// 			for i, j := 0, len(p.Comments)-1; i < j; i, j = i+1, j-1 {
-// 				p.Comments[i], p.Comments[j] = p.Comments[j], p.Comments[i]
-// 			}
-// 		}
-
-// 		p.CSRFToken = csrfToken
-
-// 		posts = append(posts, p)
-// 	}
-
-// 	return posts, nil
-// }
-
 func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, error) {
 	var posts []Post
 
+	// キャッシュから一括で取得するためのキーを準備
+	keys := make([]string, 0, len(results)*2)
 	for _, p := range results {
-		cacheKey := fmt.Sprintf("post:%d:comments", p.ID)
-		item, err := memcacheClient.Get(cacheKey)
-		if err == nil {
+		keys = append(keys, fmt.Sprintf("post:%d:commentCount", p.ID))
+		keys = append(keys, fmt.Sprintf("post:%d:comments", p.ID))
+	}
+
+	// GetMultiを使用して一括でキャッシュされたデータを取得
+	items, err := memcacheClient.GetMulti(keys)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, p := range results {
+		commentCountKey := fmt.Sprintf("post:%d:commentCount", p.ID)
+		if item, found := items[commentCountKey]; found {
+			// キャッシュヒット
+			p.CommentCount, _ = strconv.Atoi(string(item.Value))
+		} else {
+			// キャッシュミス
+			err = db.Get(&p.CommentCount, "SELECT COUNT(*) FROM `comments` WHERE `post_id` = ?", p.ID)
+			if err != nil {
+				return nil, err
+			}
+			memcacheClient.Set(&memcache.Item{Key: commentCountKey, Value: []byte(strconv.Itoa(p.CommentCount))})
+		}
+
+		commentsKey := fmt.Sprintf("post:%d:comments", p.ID)
+		if item, found := items[commentsKey]; found {
 			// キャッシュヒット
 			err = json.Unmarshal(item.Value, &p.Comments)
 			if err != nil {
@@ -281,43 +239,101 @@ func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, erro
 			}
 		} else {
 			// キャッシュミス
-			err = db.Get(&p.CommentCount, "SELECT COUNT(*) AS `count` FROM `comments` WHERE `post_id` = ?", p.ID)
-			if err != nil {
-				return nil, err
-			}
-
-			query := "SELECT c.comment,c.created_at ,u.account_name as `user.account_name` FROM `comments` as c JOIN `users` as u ON c.user_id = u.id  WHERE `post_id` = ? ORDER BY `created_at` DESC"
+			query := "SELECT c.comment, c.created_at, u.account_name as `user.account_name` FROM `comments` as c JOIN `users` as u ON c.user_id = u.id WHERE `post_id` = ? ORDER BY `created_at` DESC"
 			if !allComments {
 				query += " LIMIT 3"
 			}
-			var comments []Comment
-			err = db.Select(&comments, query, p.ID)
+			err = db.Select(&p.Comments, query, p.ID)
 			if err != nil {
 				return nil, err
 			}
-
-			// reverse
-			for i, j := 0, len(comments)-1; i < j; i, j = i+1, j-1 {
-				comments[i], comments[j] = comments[j], comments[i]
-			}
-
-			p.Comments = comments
-
-			// キャッシュへ保存
-			serialized, err := json.Marshal(p.Comments)
+			commentsBytes, err := json.Marshal(p.Comments)
 			if err != nil {
 				return nil, err
 			}
-			memcacheClient.Set(&memcache.Item{Key: cacheKey, Value: serialized})
+			memcacheClient.Set(&memcache.Item{Key: commentsKey, Value: commentsBytes})
+		}
+
+		// キャッシュミスだった場合、DBから取得してコメントを逆順にする
+		if _, found := items[commentsKey]; !found {
+			for i, j := 0, len(p.Comments)-1; i < j; i, j = i+1, j-1 {
+				p.Comments[i], p.Comments[j] = p.Comments[j], p.Comments[i]
+			}
 		}
 
 		p.CSRFToken = csrfToken
-
 		posts = append(posts, p)
 	}
 
 	return posts, nil
 }
+
+// func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, error) {
+// 	var posts []Post
+// 	var cacheKeys []string
+// 	cacheKeyMap := make(map[string]int) // Map to store post ID with its cache key
+
+// 	// キャッシュキーのリストを作成し、マッピングを保存します。
+// 	for _, p := range results {
+// 		cacheKey := fmt.Sprintf("post:%d:comments", p.ID)
+// 		cacheKeys = append(cacheKeys, cacheKey)
+// 		cacheKeyMap[cacheKey] = p.ID
+// 	}
+
+// 	// GetMultiを使用して一括でキャッシュから値を取得します。
+// 	items, err := memcacheClient.GetMulti(cacheKeys)
+// 	if err != nil {
+// 		return nil, err // 環境によってはnilを返さずに処理を続けることも可能
+// 	}
+
+// 	// 結果を処理します。
+// 	for _, p := range results {
+// 		cacheKey := fmt.Sprintf("post:%d:comments", p.ID)
+// 		if item, found := items[cacheKey]; found {
+// 			// キャッシュヒット
+// 			err = json.Unmarshal(item.Value, &p.Comments)
+// 			if err != nil {
+// 				return nil, err
+// 			}
+// 		} else {
+// 			// キャッシュミスの処理は、元の関数のロジックをそのまま使用します。
+// 			err = db.Get(&p.CommentCount, "SELECT COUNT(*) AS `count` FROM `comments` WHERE `post_id` = ?", p.ID)
+// 			if err != nil {
+// 				return nil, err
+// 			}
+
+// 			query := "SELECT c.comment,c.created_at ,u.account_name as `user.account_name` FROM `comments` as c JOIN `users` as u ON c.user_id = u.id  WHERE `post_id` = ? ORDER BY `created_at` DESC"
+// 			if !allComments {
+// 				query += " LIMIT 3"
+// 			}
+
+// 			var comments []Comment
+// 			err = db.Select(&comments, query, p.ID)
+// 			if err != nil {
+// 				return nil, err
+// 			}
+
+// 			// reverse
+// 			for i, j := 0, len(comments)-1; i < j; i, j = i+1, j-1 {
+// 				comments[i], comments[j] = comments[j], comments[i]
+// 			}
+
+// 			p.Comments = comments
+
+// 			// キャッシュへ保存
+// 			serialized, err := json.Marshal(p.Comments)
+// 			if err != nil {
+// 				return nil, err
+// 			}
+// 			memcacheClient.Set(&memcache.Item{Key: cacheKey, Value: serialized})
+// 		}
+
+// 		p.CSRFToken = csrfToken
+// 		posts = append(posts, p)
+// 	}
+
+// 	return posts, nil
+// }
 
 func imageURL(p Post) string {
 	ext := ""
