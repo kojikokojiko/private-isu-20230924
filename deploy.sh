@@ -29,7 +29,7 @@ cd golang
 
 # Goビルド
 echo "Building the Go application..."
-go build -o app -pgo=default.pgo
+go build -o app 
 
 # MySQLとNginxのログを初期化
 echo "Resetting MySQL and Nginx logs..."
