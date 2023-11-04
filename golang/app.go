@@ -119,7 +119,7 @@ func deleteImageFiles() {
 			if err != nil {
 				fmt.Println("Error deleting file:", err)
 			} else {
-				fmt.Println("Deleted:", fileName)
+				// fmt.Println("Deleted:", fileName)
 			}
 		}
 	}
