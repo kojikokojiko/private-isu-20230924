@@ -169,7 +169,6 @@ func getSession(r *http.Request) *sessions.Session {
 
 	return session
 }
-
 func getSessionUser(r *http.Request) User {
 	session := getSession(r)
 	uid, ok := session.Values["user_id"]
@@ -177,11 +176,52 @@ func getSessionUser(r *http.Request) User {
 		return User{}
 	}
 
+	cacheKey := fmt.Sprintf("user_%v", uid)
+	item, err := memcacheClient.Get(cacheKey)
+	if err != nil && err != memcache.ErrCacheMiss {
+		// キャッシュ取得時のエラーをログに記録
+		log.Print(err)
+		return User{}
+	}
+
 	u := User{}
 
-	err := db.Get(&u, "SELECT * FROM `users` WHERE `id` = ?", uid)
-	if err != nil {
-		return User{}
+	if err == memcache.ErrCacheMiss {
+		// キャッシュにない場合はデータベースから取得
+		err = db.Get(&u, "SELECT * FROM `users` WHERE `id` = ?", uid)
+		if err != nil {
+			// データベースのエラーをログに記録
+			log.Print(err)
+			return User{}
+		}
+
+		// ユーザー情報をキャッシュに保存
+		serializedUser, err := json.Marshal(u)
+		if err != nil {
+			// シリアライズエラーをログに記録
+			log.Print(err)
+			return User{}
+		}
+
+		// キャッシュにユーザー情報を保存する
+		err = memcacheClient.Set(&memcache.Item{
+			Key:        cacheKey,
+			Value:      serializedUser,
+			Expiration: 300, // 例: 5分間キャッシュする
+		})
+		if err != nil {
+			// キャッシュ設定エラーをログに記録
+			log.Print(err)
+			// キャッシュ失敗は致命的ではないので、User情報は返す
+		}
+	} else {
+		// キャッシュが見つかった場合はデシリアライズする
+		err = json.Unmarshal(item.Value, &u)
+		if err != nil {
+			// デシリアライズエラーをログに記録
+			log.Print(err)
+			return User{}
+		}
 	}
 
 	return u
@@ -375,7 +415,7 @@ func getTemplPath(filename string) string {
 
 func getInitialize(w http.ResponseWriter, r *http.Request) {
 	dbInitialize()
-	deleteImageFiles()
+	// deleteImageFiles()
 	w.WriteHeader(http.StatusOK)
 }
 
